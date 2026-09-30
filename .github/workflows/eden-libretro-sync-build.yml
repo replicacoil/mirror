@@ -1,0 +1,148 @@
+name: Sync upstream Eden and build libretro core (Windows)
+
+# Drop this file at .github/workflows/eden-libretro-sync-build.yml in YOUR
+# GitHub fork of Eden (this only works from a fork you can push to - GitHub
+# Actions can't run against git.eden-emu.dev directly).
+#
+# Expects two things committed in your fork, alongside this file:
+#   patches/eden-libretro-port.patch   <- the full port patch
+#   patches/libretro.h                 <- suyu's unmodified libretro.h, since
+#                                          the patch above deliberately excludes
+#                                          this 300K unchanged file
+#
+# What it does, every run:
+#   1. Fetches git.eden-emu.dev/eden-emu/eden's master branch and merges it
+#      into your branch, pushing the result back so your fork actually stays
+#      in sync (not just a throwaway build-time merge).
+#   2. Re-applies patches/eden-libretro-port.patch on top (skipped if already
+#      applied - e.g. on a push trigger where nothing upstream changed).
+#   3. Builds only the eden_libretro target.
+#   4. Uploads eden_libretro.dll as a workflow artifact.
+#
+# If upstream has changed one of the files the patch touches enough that it
+# no longer applies cleanly, step 2 FAILS the job on purpose rather than
+# silently building stale or half-patched code. That means the patch needs a
+# manual refresh (re-run the port, or hand-resolve the .rej hunks) before the
+# next scheduled run will go green again - this workflow deliberately does
+# not attempt to auto-resolve that for you.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "patches/**"
+      - ".github/workflows/eden-libretro-sync-build.yml"
+  schedule:
+    # 03:00 UTC on the 1st of every month. GitHub may delay scheduled runs by
+    # up to a few hours under load - that's fine for a monthly sync.
+    - cron: "0 3 1 * *"
+
+env:
+  # Your fork's branch to sync and build. Change if you're not using "main".
+  FORK_BRANCH: main
+  UPSTREAM_URL: https://git.eden-emu.dev/eden-emu/eden.git
+  UPSTREAM_BRANCH: master
+
+permissions:
+  contents: write # needed to push the synced-upstream commits back to your fork
+
+jobs:
+  sync-and-build:
+    name: Sync + build (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FORK_BRANCH }}
+          fetch-depth: 0 # full history - needed for a real merge, not a shallow one
+          persist-credentials: true
+
+      - name: Configure git identity
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync from upstream Eden
+        shell: bash
+        run: |
+          git remote add upstream "$UPSTREAM_URL" 2>/dev/null || true
+          git fetch upstream "$UPSTREAM_BRANCH"
+
+          before=$(git rev-parse HEAD)
+          if git merge --no-edit "upstream/$UPSTREAM_BRANCH"; then
+            after=$(git rev-parse HEAD)
+            if [ "$before" != "$after" ]; then
+              echo "Merged new upstream commits - pushing back to fork."
+              git push origin "HEAD:$FORK_BRANCH"
+            else
+              echo "Already up to date with upstream."
+            fi
+          else
+            echo "::error::Merge conflict pulling upstream Eden - resolve manually, then re-run."
+            git merge --abort
+            exit 1
+          fi
+
+      - name: Apply libretro core patch
+        shell: bash
+        run: |
+          mkdir -p src/libretro_core
+          cp patches/libretro.h src/libretro_core/libretro.h
+
+          if grep -q "RedirectEdenPathsToFrontend" src/libretro_core/retro_core.cpp 2>/dev/null; then
+            echo "Patch already applied, skipping."
+          else
+            if ! git apply --whitespace=nowarn patches/eden-libretro-port.patch; then
+              echo "::error::Patch no longer applies cleanly against current upstream Eden - it needs a manual refresh."
+              exit 1
+            fi
+          fi
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Vulkan SDK
+        shell: pwsh
+        run: |
+          choco install vulkan-sdk -y --no-progress
+          $sdkDir = Get-ChildItem C:\VulkanSDK -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          echo "VULKAN_SDK=$($sdkDir.FullName)" >> $env:GITHUB_ENV
+          echo "$($sdkDir.FullName)\Bin" >> $env:GITHUB_PATH
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DEDEN_BUILD_LIBRETRO_CORE=ON \
+            -DENABLE_QT=OFF \
+            -DYUZU_CMD=OFF \
+            -DYUZU_TESTS=OFF \
+            -DENABLE_WEB_SERVICE=OFF \
+            -GNinja 2>&1 | tee cmake_configure.log
+          test ${PIPESTATUS[0]} -eq 0
+
+      - name: Upload cmake log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-log-eden-libretro
+          path: cmake_configure.log
+
+      - name: Build
+        run: cmake --build build --target eden_libretro -j4
+
+      - name: Package
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force _pkg -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory _pkg | Out-Null
+          Get-ChildItem build -Recurse -Filter eden_libretro.dll | ForEach-Object { Copy-Item $_.FullName _pkg/ }
+          Copy-Item eden_libretro.info _pkg/ -ErrorAction SilentlyContinue
+          Compress-Archive -Path _pkg/* -DestinationPath eden-libretro-core-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eden-libretro-core-windows-x64
+          path: eden-libretro-core-windows-x64.zip

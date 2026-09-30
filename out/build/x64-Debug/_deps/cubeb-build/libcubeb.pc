@@ -1,0 +1,12 @@
+prefix=G:/Visual Studio Solutions/Eden/out/install/x64-Debug
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libcubeb
+Description: Cross platform audio library
+Version: 0.0.0
+Requires.private: 
+Libs: -L${libdir} -lcubeb
+Libs.private: -lspeex -lavrt -lole32 -lksuser -lwinmm
+Cflags: -I${includedir}

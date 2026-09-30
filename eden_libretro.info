@@ -1,0 +1,35 @@
+# Software Information
+display_name = "Nintendo - Switch (Eden)"
+authors = "Eden Emulator Project|yuzu Emulator Project"
+supported_extensions = "nsp|xci|nca|nro"
+corename = "eden"
+categories = "Emulator"
+license = "GPL-3.0"
+permissions = ""
+display_version = "0.1"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Switch"
+systemid = "switch"
+database = "Nintendo - Switch"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 0
+notes = "(!) Save states and netplay are not supported - Eden has no state serialization for this core.|(!) Renders headlessly and copies the finished frame back to the frontend rather than sharing a GPU context, so expect a performance cost versus standalone Eden.|(!) Requires Switch prod.keys - by default (eden_use_frontend_dirs core option) expected under system_directory/keys, alongside config, cache, shaders and logs.|(!) NAND, SDMC, saves, screenshots and other user data are placed directly under save_directory by default, so RetroArch's own save handling covers them.|(!) Disable the eden_use_frontend_dirs core option to use a standalone Eden install's existing %APPDATA%/Eden (or portable user/) data instead.|(!) This core is a community port of suyu's libretro core (itself a fork of Eden) - not an official Eden Project release."
+
+description = "A port of the Eden Nintendo Switch emulator to libretro, adapted from suyu's own libretro core (suyu being a fork of Eden). Eden implements HLE emulation of the Switch's CPU, GPU and OS services. This core is an early/experimental port: it renders internally and reads the frame back for the frontend rather than sharing a hardware context, and does not yet support save states or netplay."
