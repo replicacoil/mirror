@@ -40,7 +40,7 @@ on:
 
 env:
   # Your fork's branch to sync and build. Change if you're not using "main".
-  FORK_BRANCH: main
+  FORK_BRANCH: master
   UPSTREAM_URL: https://git.eden-emu.dev/eden-emu/eden.git
   UPSTREAM_BRANCH: master
 
