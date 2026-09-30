@@ -9,6 +9,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
@@ -50,6 +51,18 @@ public:
     [[nodiscard]] virtual RasterizerInterface* ReadRasterizer() = 0;
 
     [[nodiscard]] virtual std::string GetDeviceVendor() const = 0;
+
+    // suyu/libretro compat: lets a frontend with no real window (e.g. the
+    // libretro core) pull the finished frame back to the CPU instead of
+    // presenting to a swapchain. Default no-ops preserve the ABI for every
+    // renderer that doesn't implement headless readback.
+    virtual bool IsHeadless() const { return false; }
+    virtual const std::vector<u8>& GetLastRenderedFrame() const {
+        static const std::vector<u8> empty;
+        return empty;
+    }
+    virtual u32 GetHeadlessWidth() const { return 0; }
+    virtual u32 GetHeadlessHeight() const { return 0; }
 
     // Getter/setter functions:
     // ------------------------

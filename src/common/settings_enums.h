@@ -92,7 +92,10 @@ struct EnumMetadata {
 // AudioEngine must be specified discretely due to having existing but slightly different
 // canonicalizations
 // TODO (lat9nq): Remove explicit definition of AudioEngine/sink_id
-enum class AudioEngine : u32 { Auto, Cubeb, Sdl3, Null, };
+// suyu/libretro compat: added Libretro so the libretro core can route audio
+// to the frontend instead of a host device (see AudioEngine::Libretro below
+// and audio_core/sink/libretro_sink.h).
+enum class AudioEngine : u32 { Auto, Cubeb, Sdl3, Null, Libretro, };
 template<>
 inline std::vector<std::pair<std::string_view, AudioEngine>> EnumMetadata<AudioEngine>::Canonicalizations() {
     return {
@@ -100,6 +103,7 @@ inline std::vector<std::pair<std::string_view, AudioEngine>> EnumMetadata<AudioE
         {"cubeb", AudioEngine::Cubeb},
         {"sdl3", AudioEngine::Sdl3},
         {"null", AudioEngine::Null},
+        {"libretro", AudioEngine::Libretro},
     };
 }
 /// @brief This is just a sufficiently large number that is more than the number of other enums declared here
@@ -113,7 +117,7 @@ inline AudioEngine EnumMetadata<AudioEngine>::GetFirst() {
 }
 template<>
 inline AudioEngine EnumMetadata<AudioEngine>::GetLast() {
-    return AudioEngine::Null;
+    return AudioEngine::Libretro;
 }
 
 ENUM(AudioMode, Mono, Stereo, Surround);
@@ -150,7 +154,7 @@ ENUM(ScalingFilter, NearestNeighbor, Bilinear, Bicubic, Gaussian, Lanczos, Scale
 ENUM(AntiAliasing, None, Fxaa, Smaa);
 ENUM(AspectRatio, R16_9, R4_3, R21_9, R16_10, Stretch);
 ENUM(ConsoleMode, Handheld, Docked);
-ENUM(AppletMode, HLE, LLE, Disabled);
+ENUM(AppletMode, HLE, LLE);
 ENUM(SpirvOptimizeMode, Never, OnLoad, Always);
 ENUM(GpuClock, Normal, Boost, Overclock)
 ENUM(GpuUnswizzleSize, VerySmall, Small, Normal, Large, VeryLarge)

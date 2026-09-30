@@ -290,6 +290,10 @@ if (ENABLE_WEB_SERVICE)
     add_subdirectory(web_service)
 endif()
 
+if (EDEN_BUILD_LIBRETRO_CORE)
+    add_subdirectory(libretro_core)
+endif()
+
 if (ANDROID)
     add_subdirectory(android/app/src/main/jni)
     target_include_directories(yuzu-android PRIVATE android/app/src/main)

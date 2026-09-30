@@ -1,37 +1,33 @@
 name: Sync upstream Eden and build libretro core (Windows)
 
 # Drop this file at .github/workflows/eden-libretro-sync-build.yml in YOUR
-# GitHub fork of Eden (this only works from a fork you can push to - GitHub
-# Actions can't run against git.eden-emu.dev directly).
+# GitHub fork of Eden.
 #
-# Expects two things committed in your fork, alongside this file:
-#   patches/eden-libretro-port.patch   <- the full port patch
-#   patches/libretro.h                 <- suyu's unmodified libretro.h, since
-#                                          the patch above deliberately excludes
-#                                          this 300K unchanged file
+# Unlike the earlier patch-based version of this workflow, this one expects
+# the libretro core's files to be committed directly into your fork's tree
+# (see the file listing you were given - CMakeLists.txt changes, the new
+# src/libretro_core/ directory, etc.). That means:
+#   - No patch-apply step here at all - the files are just already there.
+#   - When upstream Eden changes one of the files we've customised, the
+#     "Sync from upstream" step below will hit a normal git merge conflict
+#     on that file instead of a patch silently failing to apply. Resolve it
+#     the normal way (checkout the branch locally, fix the conflict markers,
+#     commit, push) - ordinary git merge conflict resolution, not patch
+#     surgery.
 #
 # What it does, every run:
 #   1. Fetches git.eden-emu.dev/eden-emu/eden's master branch and merges it
-#      into your branch, pushing the result back so your fork actually stays
-#      in sync (not just a throwaway build-time merge).
-#   2. Re-applies patches/eden-libretro-port.patch on top (skipped if already
-#      applied - e.g. on a push trigger where nothing upstream changed).
-#   3. Builds only the eden_libretro target.
-#   4. Uploads eden_libretro.dll as a workflow artifact.
-#
-# If upstream has changed one of the files the patch touches enough that it
-# no longer applies cleanly, step 2 FAILS the job on purpose rather than
-# silently building stale or half-patched code. That means the patch needs a
-# manual refresh (re-run the port, or hand-resolve the .rej hunks) before the
-# next scheduled run will go green again - this workflow deliberately does
-# not attempt to auto-resolve that for you.
+#      into your branch, pushing the result back so your fork stays in sync.
+#   2. Builds the eden_libretro target.
+#   3. Uploads eden_libretro.dll (+ eden_libretro.info) as a workflow artifact.
 
 on:
   workflow_dispatch: {}
   push:
-    branches: [main]
+    branches: [master]
     paths:
-      - "patches/**"
+      - "src/libretro_core/**"
+      - "src/audio_core/sink/libretro_sink.*"
       - ".github/workflows/eden-libretro-sync-build.yml"
   schedule:
     # 03:00 UTC on the 1st of every month. GitHub may delay scheduled runs by
@@ -39,7 +35,7 @@ on:
     - cron: "0 3 1 * *"
 
 env:
-  # Your fork's branch to sync and build. Change if you're not using "main".
+  # Your fork's branch to sync and build.
   FORK_BRANCH: master
   UPSTREAM_URL: https://git.eden-emu.dev/eden-emu/eden.git
   UPSTREAM_BRANCH: master
@@ -80,24 +76,9 @@ jobs:
               echo "Already up to date with upstream."
             fi
           else
-            echo "::error::Merge conflict pulling upstream Eden - resolve manually, then re-run."
+            echo "::error::Merge conflict pulling upstream Eden - one of the files the libretro port touches has changed upstream. Resolve the conflict locally (git pull, fix conflict markers, commit, push), then re-run."
             git merge --abort
             exit 1
-          fi
-
-      - name: Apply libretro core patch
-        shell: bash
-        run: |
-          mkdir -p src/libretro_core
-          cp patches/libretro.h src/libretro_core/libretro.h
-
-          if grep -q "RedirectEdenPathsToFrontend" src/libretro_core/retro_core.cpp 2>/dev/null; then
-            echo "Patch already applied, skipping."
-          else
-            if ! git apply --whitespace=nowarn patches/eden-libretro-port.patch; then
-              echo "::error::Patch no longer applies cleanly against current upstream Eden - it needs a manual refresh."
-              exit 1
-            fi
           fi
 
       - uses: ilammy/msvc-dev-cmd@v1

@@ -59,6 +59,13 @@ public:
         return device.GetDriverName();
     }
 
+    // suyu/libretro compat: readback path for headless frontends with no
+    // real swapchain (see Composite()'s is_headless branch below).
+    bool IsHeadless() const override { return is_headless; }
+    const std::vector<u8>& GetLastRenderedFrame() const override { return headless_frame_data; }
+    u32 GetHeadlessWidth() const override { return headless_width; }
+    u32 GetHeadlessHeight() const override { return headless_height; }
+
     // Enhanced platform-specific initialization
     void InitializePlatformSpecific();
 
@@ -107,6 +114,12 @@ private:
     std::optional<TurboMode> turbo_mode;
 
     Frame applet_frame;
+
+    // suyu/libretro compat: populated by Composite() when is_headless is set.
+    bool is_headless{false};
+    std::vector<u8> headless_frame_data;
+    u32 headless_width{1280};
+    u32 headless_height{720};
 };
 
 } // namespace Vulkan

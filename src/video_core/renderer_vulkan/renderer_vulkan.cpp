@@ -181,6 +181,9 @@ try
 #endif
 {
 
+    // suyu/libretro compat: see the is_headless branch in Composite() below.
+    is_headless = (render_window.GetWindowInfo().type == Core::Frontend::WindowSystemType::Headless);
+
     if (Settings::values.renderer_force_max_clock.GetValue() && device.ShouldBoostClocks()) {
         turbo_mode.emplace(instance, dld);
         scheduler.RegisterOnSubmit([this] { turbo_mode->QueueSubmitted(); });
@@ -207,6 +210,36 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     };
 
     RenderAppletCaptureLayer(framebuffers);
+
+    // suyu/libretro compat: no real swapchain to present to - read the
+    // finished frame back to the CPU instead and hand it to
+    // RendererBase::GetLastRenderedFrame() for the frontend to pull.
+    if (is_headless) {
+        static unsigned headless_composite_count = 0;
+        ++headless_composite_count;
+        if (headless_composite_count <= 5 || (headless_composite_count % 60) == 0) {
+            LOG_INFO(Render_Vulkan, "Headless Composite #{}, {} framebuffer layers",
+                     headless_composite_count, framebuffers.size());
+        }
+
+        RenderScreenshot(framebuffers);
+
+        if (!framebuffers.empty()) {
+            const Layout::FramebufferLayout layout{render_window.GetFramebufferLayout()};
+            headless_width = layout.width;
+            headless_height = layout.height;
+            const VkDeviceSize buffer_size = headless_width * headless_height * 4;
+
+            auto dst_buffer = RenderToBuffer(framebuffers, layout, VK_FORMAT_B8G8R8A8_UNORM,
+                                             buffer_size);
+            headless_frame_data.resize(buffer_size);
+            std::memcpy(headless_frame_data.data(), dst_buffer.Mapped().data(), buffer_size);
+        }
+
+        gpu.RendererFrameEndNotify();
+        rasterizer.TickFrame();
+        return;
+    }
 
     if (!render_window.IsShown()) {
         return;
