@@ -273,15 +273,20 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb) {
 }
 
 RETRO_API void retro_init() {
+    // Must happen before ANY Common::FS::GetEdenPath() call - including the
+    // one hiding inside Common::Log::Initialize() itself (it resolves
+    // EdenPath::LogDir to open its log file), not just the key-import block
+    // further down. Logging init used to come first here, which silently
+    // sent every log to Eden's default %APPDATA%/portable location instead
+    // of the frontend's system directory - the log file redirection never
+    // actually took effect for the one thing you'd go looking for first
+    // when something goes wrong.
+    RedirectEdenPathsToFrontend();
+
     Common::Log::Initialize();
     Common::Log::Start();
 
     LOG_INFO(Frontend, "libretro core: retro_init() starting");
-
-    // Must happen before any Common::FS::GetEdenPath() call (including the
-    // key-import block just below), or those calls will already have latched
-    // onto the old %APPDATA%/portable paths.
-    RedirectEdenPathsToFrontend();
 
     g_system = std::make_unique<Core::System>();
     g_emu_window = std::make_unique<LibretroCore::RetroEmuWindow>();
