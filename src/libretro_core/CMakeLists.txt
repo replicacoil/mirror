@@ -8,7 +8,13 @@ add_library(eden_libretro SHARED
     retro_emu_window.h
 )
 
-target_link_libraries(eden_libretro PRIVATE common core input_common frontend_common audio_core network)
+# video_core must be linked explicitly here, not just pulled in via core:
+# core links video_core PRIVATE (see src/core/CMakeLists.txt), so its PUBLIC
+# usage requirements - notably Vulkan::Headers' include path, which our
+# VMA_IMPLEMENTATION block at the end of retro_core.cpp needs for
+# <vulkan/vulkan.h> - don't propagate through core to us. yuzu_cmd's own
+# CMakeLists.txt links video_core directly for the same reason.
+target_link_libraries(eden_libretro PRIVATE common core input_common frontend_common audio_core network video_core)
 target_link_libraries(eden_libretro PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
 set_target_properties(eden_libretro PROPERTIES
