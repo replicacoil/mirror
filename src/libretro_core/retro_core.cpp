@@ -43,6 +43,9 @@
 #include "audio_core/sink/libretro_sink.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
+// Eden compat: suyu (and older yuzu) split logging into common/logging/backend.h
+// + common/logging/log.h; Eden consolidated both into a single common/logging.h
+// providing the same Initialize()/Start()/Stop() and LOG_* macros used below.
 #include "common/logging.h"
 #include "common/settings.h"
 #include "core/core.h"
@@ -847,3 +850,13 @@ RETRO_API size_t retro_get_memory_size(unsigned /*id*/) {
 }
 
 } // extern "C"
+
+// Eden compat: unlike suyu, Eden's video_core only declares the VMA
+// (Vulkan Memory Allocator) interface - it never instantiates the actual
+// implementation itself, so every final linked binary that pulls in
+// video_core is individually responsible for doing so exactly once (see
+// yuzu_cmd/yuzu.cpp and yuzu/main_window.cpp for the same pattern). Without
+// this, linking fails with unresolved externals for every vma* symbol
+// video_core.lib calls (vmaCreateBuffer, vmaFlushAllocation, etc).
+#define VMA_IMPLEMENTATION
+#include "video_core/vulkan_common/vma.h"
