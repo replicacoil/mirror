@@ -127,7 +127,22 @@ Swapchain::Swapchain(
     , device{device_}
     , scheduler{scheduler_}
 {
-    Create(surface, width_, height_);
+    // suyu/libretro compat: a headless window has no real surface at all
+    // (see vulkan_surface.cpp's CreateSurface, which returns an empty
+    // surface for WindowSystemType::Headless rather than failing). Calling
+    // Create() below would otherwise immediately call
+    // GetSurfaceCapabilitiesKHR on a null surface, which crashes. Set the
+    // same fallback state RendererVulkan::Composite()'s headless readback
+    // path expects (B8G8R8A8, one image) directly instead.
+    if (surface) {
+        Create(surface, width_, height_);
+    } else {
+        width = width_;
+        height = height_;
+        image_view_format = VK_FORMAT_B8G8R8A8_UNORM;
+        surface_format = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+        image_count = 1;
+    }
 }
 
 Swapchain::~Swapchain() = default;
@@ -142,6 +157,13 @@ void Swapchain::Create(
     width = width_;
     height = height_;
     surface = surface_;
+
+    // Same headless guard as the constructor above - Create() can also be
+    // called later (window resize/recreate), still with a null surface in
+    // the headless case, and must bail out before touching the surface.
+    if (!surface) {
+        return;
+    }
 
     const auto physical_device = device.GetPhysical();
     const auto capabilities{physical_device.GetSurfaceCapabilitiesKHR(VkSurfaceKHR(surface))};
