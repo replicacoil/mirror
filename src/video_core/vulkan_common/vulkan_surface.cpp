@@ -107,6 +107,14 @@ vk::SurfaceKHR CreateSurface(
 #endif
 
     if (!unsafe_surface) {
+        // suyu/libretro compat: a headless window (see retro_emu_window.h) has
+        // no real native window handle to create a presentable surface from,
+        // by design - that's the whole point of headless frame readback in
+        // RendererVulkan::Composite(). Returning an empty surface here lets
+        // Vulkan init continue instead of treating "no window" as an error.
+        if (window_info.type == Core::Frontend::WindowSystemType::Headless) {
+            return vk::SurfaceKHR{};
+        }
         LOG_ERROR(Render_Vulkan, "Presentation not supported on this platform");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
     }
