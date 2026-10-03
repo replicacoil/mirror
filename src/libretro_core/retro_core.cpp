@@ -349,11 +349,11 @@ RETRO_API void retro_init() {
     }
 
     // Load keys from RetroArch system directory if available
-    // Users can place prod.keys and title.keys in <system_dir>/eden/keys/
+    // Users can place prod.keys and title.keys in <system_dir>/keys/
     if (g_environ_cb) {
         const char* system_dir = nullptr;
         if (g_environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir) {
-            const auto src_dir = std::filesystem::path(system_dir) / "eden" / "keys";
+            const auto src_dir = std::filesystem::path(system_dir) / "keys";
             const auto dst_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::KeysDir);
             LOG_INFO(Frontend, "libretro: checking for keys in: {}", src_dir.string());
             if (std::filesystem::exists(src_dir)) {
@@ -403,7 +403,7 @@ RETRO_API unsigned retro_api_version() {
 
 RETRO_API void retro_get_system_info(struct retro_system_info* info) {
     std::memset(info, 0, sizeof(*info));
-    info->library_name = "eden";
+    info->library_name = "Eden";
     info->library_version = "0.04";
     info->valid_extensions = "nsp|xci|nca|nro";
     info->need_fullpath = true;
