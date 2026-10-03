@@ -203,6 +203,22 @@ void RedirectEdenPathsToFrontend() {
               save_base.string());
 }
 
+
+static const retro_controller_description pad_types[] = {
+    {"Pro Controller", RETRO_DEVICE_JOYPAD},
+    {"Dual Joy-Con Detached", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
+    {"Joy-Con Left", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)},
+    {"Joy-Con Right", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)},
+    {nullptr, 0}
+};
+
+static const struct retro_controller_info port_info[] = {
+    {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {pad_types, 4},
+    {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {nullptr, 0}
+};
+
+unsigned g_port_device_type[8] = {};
+
 } // namespace
 
 extern "C" {
@@ -244,7 +260,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb) {
         {nullptr, nullptr},
     };
     cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
-
+    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)port_info);
     // Tell the frontend up front that state serialization is not usable for
     // frame-sensitive features. RetroArch keys netplay and rerecording off
     // this, so declaring it means those are cleanly reported as unavailable
@@ -419,7 +435,11 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info* info) {
     info->timing.sample_rate = 48000.0;
 }
 
-RETRO_API void retro_set_controller_port_device(unsigned /*port*/, unsigned /*device*/) {}
+RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device) {
+    if (port < 8) {
+        g_port_device_type[port] = device;
+    }
+}
 
 RETRO_API void retro_reset() {
     LOG_WARNING(Frontend, "libretro core: retro_reset() requested but not yet implemented "
@@ -450,7 +470,23 @@ constexpr RetroToVirtual kButtonMap[] = {
     {RETRO_DEVICE_ID_JOYPAD_LEFT, VB::ButtonLeft},
     {RETRO_DEVICE_ID_JOYPAD_RIGHT, VB::ButtonRight},
 };
-bool g_prev_buttons[20] = {};
+bool g_prev_buttons[8][20] = {};
+
+static Settings::ControllerType MapDeviceType(unsigned device) {
+    switch (device) {
+    case RETRO_DEVICE_JOYPAD:
+        return Settings::ControllerType::ProController;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0):
+        return Settings::ControllerType::DualJoyconDetached;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
+        return Settings::ControllerType::LeftJoycon;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2):
+        return Settings::ControllerType::RightJoycon;
+    default:
+        return Settings::ControllerType::ProController;
+    }
+}
+
 } // namespace
 
 namespace {
@@ -547,22 +583,34 @@ RETRO_API void retro_run() {
     if (g_input_state_cb && g_input_subsystem && g_game_loaded) {
         auto* vgp = g_input_subsystem->GetVirtualGamepad();
         if (vgp) {
-            for (const auto& m : kButtonMap) {
-                const bool pressed = g_input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, m.retro_id) != 0;
-                const int idx = static_cast<int>(m.virtual_button);
-                if (pressed != g_prev_buttons[idx]) {
-                    g_prev_buttons[idx] = pressed;
-                    vgp->SetButtonState(0, m.virtual_button, pressed);
+            for (unsigned port = 0; port < 8; ++port) {
+                for (const auto& m : kButtonMap) {
+                    const bool pressed = g_input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, m.retro_id) != 0;
+                    const int idx = static_cast<int>(m.virtual_button);
+                    if (pressed != g_prev_buttons[port][idx]) {
+                        g_prev_buttons[port][idx] = pressed;
+                        vgp->SetButtonState(port, m.virtual_button, pressed);
+                    }
                 }
+                // Left analog stick
+                const float lx = g_input_state_cb(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X) /
+                    32768.0f;
+                const float ly =
+                    g_input_state_cb(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+                                     RETRO_DEVICE_ID_ANALOG_Y) /
+                    -32768.0f;
+                vgp->SetStickPosition(port, InputCommon::VirtualGamepad::VirtualStick::Left, lx, ly);
+                // Right analog stick
+                const float rx =
+                    g_input_state_cb(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
+                                     RETRO_DEVICE_ID_ANALOG_X) /
+                    32768.0f;
+                const float ry =
+                    g_input_state_cb(port, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
+                                     RETRO_DEVICE_ID_ANALOG_Y) /
+                    -32768.0f;
+                vgp->SetStickPosition(port, InputCommon::VirtualGamepad::VirtualStick::Right, rx, ry);
             }
-            // Left analog stick
-            const float lx = g_input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X) / 32768.0f;
-            const float ly = g_input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) / -32768.0f;
-            vgp->SetStickPosition(0, InputCommon::VirtualGamepad::VirtualStick::Left, lx, ly);
-            // Right analog stick
-            const float rx = g_input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X) / 32768.0f;
-            const float ry = g_input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y) / -32768.0f;
-            vgp->SetStickPosition(0, InputCommon::VirtualGamepad::VirtualStick::Right, rx, ry);
         }
     }
 
@@ -726,6 +774,13 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
             Settings::values.cpuopt_fastmem_exclusives.SetValue(enabled);
         }
         g_system->ApplySettings();
+
+        for (int i = 0; i < 8; ++i) {
+            auto& p = Settings::values.players.GetValue()[i];
+            p.connected = true;
+            p.controller_type = MapDeviceType(g_port_device_type[i]);
+        }
+        g_system->HIDCore().ReloadInputDevices();
 
         g_emu_window->UpdateCurrentFramebufferLayout(kFrameWidth * g_output_scale, kFrameHeight * g_output_scale);
         g_geometry_dirty = true;
