@@ -123564,3 +123564,270 @@ events:
         - "G:/Visual Studio Solutions/Eden/out/install/x64-Debug"
       CMAKE_FIND_ROOT_PATH: "G:/Visual Studio/Tools/vcpkg/installed/x64-windows/debug;G:/Visual Studio/Tools/vcpkg/installed/x64-windows"
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:104 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjgpw1"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjgpw1"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjgpw1'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_c4375
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_c4375.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_c4375.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjgpw1\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_c4375.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_c4375.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_c4375.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjgpw1\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjgpw1\\CheckSymbolExists.c(7): error C2065: '__ARM64__': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:104 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-9jty8f"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-9jty8f"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-9jty8f'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_6360c
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_6360c.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_6360c.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-9jty8f\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_6360c.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_6360c.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_6360c.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-9jty8f\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-9jty8f\\CheckSymbolExists.c(7): error C2065: '__aarch64__': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:104 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjcus4"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjcus4"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-bjcus4'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_449dd
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_449dd.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_449dd.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjcus4\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_449dd.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_449dd.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_449dd.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjcus4\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-bjcus4\\CheckSymbolExists.c(7): error C2065: '_M_ARM64': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:111 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-g4pekz"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-g4pekz"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-g4pekz'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_75e60
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_75e60.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_75e60.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-g4pekz\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_75e60.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_75e60.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_75e60.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-g4pekz\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-g4pekz\\CheckSymbolExists.c(7): error C2065: '__x86_64': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:111 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-056xxo"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-056xxo"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-056xxo'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_f6673
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_f6673.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_f6673.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-056xxo\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_f6673.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_f6673.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_f6673.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-056xxo\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-056xxo\\CheckSymbolExists.c(7): error C2065: '__x86_64__': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:111 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-x4gsp8"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-x4gsp8"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-x4gsp8'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_97ad4
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_97ad4.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_97ad4.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-x4gsp8\\CheckSymbolExists.c"
+        FAILED: [code=2] CMakeFiles/cmTC_97ad4.dir/CheckSymbolExists.c.obj 
+        "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_97ad4.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_97ad4.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-x4gsp8\\CheckSymbolExists.c"
+        G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-x4gsp8\\CheckSymbolExists.c(7): error C2065: '__amd64': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:193 (try_compile)"
+      - "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.3/Modules/CheckSymbolExists.cmake:98 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:59 (check_symbol_exists)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:83 (detect_architecture)"
+      - "externals/cmake-modules/DetectArchitecture.cmake:111 (detect_architecture_symbols)"
+      - "CMakeLists.txt:18 (include)"
+    directories:
+      source: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-5cymvc"
+      binary: "G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-5cymvc"
+    cmakeVariables:
+      CMAKE_CXX_SCAN_FOR_MODULES: "0"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "G:/Visual Studio Solutions/Eden/CMakeModules;G:/Visual Studio Solutions/Eden/CMakeModules/find;G:/Visual Studio Solutions/Eden/externals/cmake-modules"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "15.0"
+      VCPKG_INSTALLED_DIR: "G:/Visual Studio/Tools/vcpkg/installed"
+      VCPKG_PREFER_SYSTEM_LIBS: "OFF"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "G:/Visual Studio/Tools/vcpkg"
+    buildResult:
+      variable: "SYMBOL_EXISTS"
+      cached: true
+      stdout: |
+        Change Dir: 'G:/Visual Studio Solutions/Eden/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-5cymvc'
+        
+        Run Build Command(s): "D:/Program Files/Microsoft Visual Studio/18/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe" -v cmTC_09bfb
+        [1/2] "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\cl.exe"  /nologo -D_MBCS  /DWIN32 /D_WINDOWS  /Ob0 /Od /RTC1 -MDd -Zi /showIncludes /FoCMakeFiles\\cmTC_09bfb.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_09bfb.dir\\ /FS -c "G:\\Visual Studio Solutions\\Eden\\out\\build\\x64-Debug\\CMakeFiles\\CMakeScratch\\TryCompile-5cymvc\\CheckSymbolExists.c"
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && "D:\\Program Files\\Microsoft Visual Studio\\18\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe" -E vs_link_exe --msvc-ver=1951 --intdir=CMakeFiles\\cmTC_09bfb.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100261~1.0\\x64\\mt.exe --manifests  -- "D:\\Program Files\\Microsoft Visual Studio\\18\\VC\\Tools\\MSVC\\1451~1.362\\bin\\Hostx64\\x64\\link.exe" /nologo CMakeFiles\\cmTC_09bfb.dir\\CheckSymbolExists.c.obj  /out:cmTC_09bfb.exe /implib:cmTC_09bfb.lib /pdb:cmTC_09bfb.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+...

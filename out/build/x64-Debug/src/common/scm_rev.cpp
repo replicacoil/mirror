@@ -6,13 +6,13 @@
 
 #include "common/scm_rev.h"
 
-#define GIT_REV "f8b76511041bb54070c52d1d09ea07d8108c592a"
+#define GIT_REV "19e8c104899111fe48379266d24f73833e80cb0b"
 #define GIT_BRANCH "master"
-#define GIT_DESC "f8b7651104-master"
+#define GIT_DESC "19e8c10489-master"
 #define BUILD_NAME "Eden"
-#define BUILD_DATE "2026-09-30T06:38:01Z"
-#define BUILD_FULLNAME "Eden f8b7651104-master "
-#define BUILD_VERSION "f8b7651104-master"
+#define BUILD_DATE "2026-10-03T18:19:44Z"
+#define BUILD_FULLNAME "Eden 19e8c10489-master "
+#define BUILD_VERSION "19e8c10489-master"
 #define BUILD_ID "master"
 #define TITLE_BAR_FORMAT_IDLE ""
 #define TITLE_BAR_FORMAT_RUNNING ""

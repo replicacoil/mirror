@@ -728,6 +728,7 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
         g_system->ApplySettings();
 
         g_emu_window->UpdateCurrentFramebufferLayout(kFrameWidth * g_output_scale, kFrameHeight * g_output_scale);
+        g_geometry_dirty = true;
 
         // Join an Eden room if the user configured one. Done here rather than
         // in retro_init so the options the frontend collected are already
@@ -872,3 +873,13 @@ RETRO_API size_t retro_get_memory_size(unsigned /*id*/) {
 }
 
 } // extern "C"
+
+// Eden compat: unlike suyu, Eden's video_core only declares the VMA
+// (Vulkan Memory Allocator) interface - it never instantiates the actual
+// implementation itself, so every final linked binary that pulls in
+// video_core is individually responsible for doing so exactly once (see
+// yuzu_cmd/yuzu.cpp and yuzu/main_window.cpp for the same pattern). Without
+// this, linking fails with unresolved externals for every vma* symbol
+// video_core.lib calls (vmaCreateBuffer, vmaFlushAllocation, etc).
+#define VMA_IMPLEMENTATION
+#include "video_core/vulkan_common/vma.h"

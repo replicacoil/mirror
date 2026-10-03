@@ -366,8 +366,8 @@ CMAKE_BUILD_TYPE_DEFAULT:STRING=Release
 
 CMAKE_CONFIGURATION_TYPES:STRING=Debug;Release
 
-//CXX compiler
-CMAKE_CXX_COMPILER:STRING=D:/Program Files/Microsoft Visual Studio/18/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
+//No help, variable specified on the command line.
+CMAKE_CXX_COMPILER:FILEPATH=D:/Program Files/Microsoft Visual Studio/18/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
 
 //Flags used by the CXX compiler during all build types.
 CMAKE_CXX_FLAGS:STRING=/DWIN32 /D_WINDOWS /EHsc
@@ -387,8 +387,8 @@ CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/O2 /Ob1 /DNDEBUG
 //Libraries linked by default with all C++ applications.
 CMAKE_CXX_STANDARD_LIBRARIES:STRING=kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
 
-//C compiler
-CMAKE_C_COMPILER:STRING=D:/Program Files/Microsoft Visual Studio/18/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
+//No help, variable specified on the command line.
+CMAKE_C_COMPILER:FILEPATH=D:/Program Files/Microsoft Visual Studio/18/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
 
 //Flags used by the C compiler during all build types.
 CMAKE_C_FLAGS:STRING=/DWIN32 /D_WINDOWS
@@ -626,8 +626,8 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 //Path to a program.
 CMAKE_STRIP:FILEPATH=CMAKE_STRIP-NOTFOUND
 
-//The CMake toolchain file
-CMAKE_TOOLCHAIN_FILE:FILEPATH=G:/Visual Studio/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=G:/Visual Studio/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -756,6 +756,9 @@ DYNARMIC_USE_BUNDLED_EXTERNALS:BOOL=OFF
 
 //Support disassembly of jitted x86_64 code using LLVM
 DYNARMIC_USE_LLVM:BOOL=OFF
+
+//Build Eden as a libretro core (eden_libretro.dll)
+EDEN_BUILD_LIBRETRO_CORE:BOOL=OFF
 
 //Enables the cubeb audio backend
 ENABLE_CUBEB:BOOL=ON
@@ -1810,12 +1813,6 @@ YUZU_USE_BUNDLED_SDL3:BOOL=ON
 
 //Download bundled sirit
 YUZU_USE_BUNDLED_SIRIT:BOOL=OFF
-
-//Use QtMultimedia for Camera
-YUZU_USE_QT_MULTIMEDIA:BOOL=OFF
-
-//Use QtWebEngine for web applet implementation
-YUZU_USE_QT_WEB_ENGINE:BOOL=OFF
 
 //Visibility for ZDICTLIB_STATIC_API API
 ZDICTLIB_STATIC_API:STRING=
@@ -3130,8 +3127,6 @@ CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 CMAKE_OBJDUMP-ADVANCED:INTERNAL=1
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_RANLIB
-CMAKE_RANLIB-ADVANCED:INTERNAL=1
 //noop for ranlib
 CMAKE_RANLIB:INTERNAL=:
 //ADVANCED property for variable: CMAKE_RC_COMPILER
@@ -3217,7 +3212,7 @@ CPM_PACKAGE_Boost_SOURCE_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/.cache/cpm
 CPM_PACKAGE_Catch2_BINARY_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/out/build/x64-Debug/_deps/catch2-build
 CPM_PACKAGE_Catch2_SOURCE_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/.cache/cpm/catch2/v3.13.0
 CPM_PACKAGE_FFmpeg_BINARY_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/out/build/x64-Debug/_deps/ffmpeg-build
-CPM_PACKAGE_FFmpeg_SOURCE_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/.cache/cpm/ffmpeg/9.0.1-1788120736-bf1b838f2a-windows-amd64
+CPM_PACKAGE_FFmpeg_SOURCE_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/.cache/cpm/ffmpeg/9.0.2-1790726865-946fcce07b-windows-amd64
 CPM_PACKAGE_OpenSSL_BINARY_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/out/build/x64-Debug/_deps/openssl-build
 CPM_PACKAGE_OpenSSL_SOURCE_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/.cache/cpm/openssl/4.0.1-1788234794-b64f68a94e-windows-amd64
 CPM_PACKAGE_Opus_BINARY_DIR:INTERNAL=G:/Visual Studio Solutions/Eden/out/build/x64-Debug/_deps/opus-build
@@ -4452,6 +4447,10 @@ Vulkan_GLSLC_EXECUTABLE-ADVANCED:INTERNAL=1
 Vulkan_INCLUDE_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Vulkan_LIBRARY
 Vulkan_LIBRARY-ADVANCED:INTERNAL=1
+//Use QtMultimedia for Camera
+YUZU_USE_QT_MULTIMEDIA:INTERNAL=OFF
+//Use QtWebEngine for web applet implementation
+YUZU_USE_QT_WEB_ENGINE:INTERNAL=OFF
 //STRINGS property for variable: ZDICTLIB_STATIC_API
 ZDICTLIB_STATIC_API-STRINGS:INTERNAL=;hidden;default;protected;internal
 //STRINGS property for variable: ZDICTLIB_VISIBLE
