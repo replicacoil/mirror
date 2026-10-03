@@ -43,10 +43,8 @@
 #include "audio_core/sink/libretro_sink.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
-// Eden compat: suyu (and older yuzu) split logging into common/logging/backend.h
-// + common/logging/log.h; Eden consolidated both into a single common/logging.h
-// providing the same Initialize()/Start()/Stop() and LOG_* macros used below.
-#include "common/logging.h"
+#include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/cpu_manager.h"
@@ -70,6 +68,10 @@ std::unique_ptr<LibretroCore::RetroEmuWindow> g_emu_window;
 std::shared_ptr<InputCommon::InputSubsystem> g_input_subsystem;
 std::string g_game_path;
 bool g_game_loaded = false;
+
+unsigned g_output_scale = 1;
+bool g_geometry_dirty = false;
+
 // False: Eden drives a host audio device directly (default, sounds correct).
 // True: samples are handed to the frontend via retro_audio_sample_batch.
 bool g_use_frontend_audio = false;
@@ -273,20 +275,15 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb) {
 }
 
 RETRO_API void retro_init() {
-    // Must happen before ANY Common::FS::GetEdenPath() call - including the
-    // one hiding inside Common::Log::Initialize() itself (it resolves
-    // EdenPath::LogDir to open its log file), not just the key-import block
-    // further down. Logging init used to come first here, which silently
-    // sent every log to Eden's default %APPDATA%/portable location instead
-    // of the frontend's system directory - the log file redirection never
-    // actually took effect for the one thing you'd go looking for first
-    // when something goes wrong.
-    RedirectEdenPathsToFrontend();
-
     Common::Log::Initialize();
     Common::Log::Start();
 
     LOG_INFO(Frontend, "libretro core: retro_init() starting");
+
+    // Must happen before any Common::FS::GetEdenPath() call (including the
+    // key-import block just below), or those calls will already have latched
+    // onto the old %APPDATA%/portable paths.
+    RedirectEdenPathsToFrontend();
 
     g_system = std::make_unique<Core::System>();
     g_emu_window = std::make_unique<LibretroCore::RetroEmuWindow>();
@@ -349,11 +346,11 @@ RETRO_API void retro_init() {
     }
 
     // Load keys from RetroArch system directory if available
-    // Users can place prod.keys and title.keys in <system_dir>/keys/
+    // Users can place prod.keys and title.keys in <system_dir>/eden/keys/
     if (g_environ_cb) {
         const char* system_dir = nullptr;
         if (g_environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir) {
-            const auto src_dir = std::filesystem::path(system_dir) / "keys";
+            const auto src_dir = std::filesystem::path(system_dir) / "eden" / "keys";
             const auto dst_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::KeysDir);
             LOG_INFO(Frontend, "libretro: checking for keys in: {}", src_dir.string());
             if (std::filesystem::exists(src_dir)) {
@@ -403,7 +400,7 @@ RETRO_API unsigned retro_api_version() {
 
 RETRO_API void retro_get_system_info(struct retro_system_info* info) {
     std::memset(info, 0, sizeof(*info));
-    info->library_name = "Eden";
+    info->library_name = "eden";
     info->library_version = "0.04";
     info->valid_extensions = "nsp|xci|nca|nro";
     info->need_fullpath = true;
@@ -533,6 +530,16 @@ void RETRO_CALLCONV FrontendAudioSetState(bool enabled) {
 } // namespace
 
 RETRO_API void retro_run() {
+    if (g_geometry_dirty && g_environ_cb) {
+        retro_game_geometry geom{};
+        geom.base_width = kFrameWidth * g_output_scale;
+        geom.base_height = kFrameHeight * g_output_scale;
+        geom.max_width = kFrameWidth * 4;
+        geom.max_height = kFrameHeight * 4;
+        geom.aspect_ratio = (float)kFrameWidth / (float)kFrameHeight;
+        g_environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
+        g_geometry_dirty = false;
+    }
     if (g_input_poll_cb) {
         g_input_poll_cb();
     }
@@ -669,9 +676,16 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
         if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
             const std::string v(var.value);
             auto res = Settings::ResolutionSetup::Res1X;
-            if (v == "2x") res = Settings::ResolutionSetup::Res2X;
-            else if (v == "3x") res = Settings::ResolutionSetup::Res3X;
-            else if (v == "4x") res = Settings::ResolutionSetup::Res4X;
+            if (v == "2x") {
+                res = Settings::ResolutionSetup::Res2X;
+                g_output_scale = 2;
+            } else if (v == "3x") {
+                res = Settings::ResolutionSetup::Res3X;
+                g_output_scale = 3;
+            } else if (v == "4x") {
+                res = Settings::ResolutionSetup::Res4X;
+                g_output_scale = 4;
+            }
             Settings::values.resolution_setup.SetValue(res);
         }
         var.key = "eden_scaling_filter";
@@ -713,6 +727,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
             Settings::values.cpuopt_fastmem_exclusives.SetValue(enabled);
         }
         g_system->ApplySettings();
+
+        g_emu_window->UpdateCurrentFramebufferLayout(kFrameWidth * g_output_scale, kFrameHeight * g_output_scale);
 
         // Join an Eden room if the user configured one. Done here rather than
         // in retro_init so the options the frontend collected are already
@@ -826,6 +842,8 @@ RETRO_API bool retro_load_game_special(unsigned /*game_type*/, const struct retr
 
 RETRO_API void retro_unload_game() {
     if (g_system && g_game_loaded) {
+        g_output_scale = 1;
+        g_geometry_dirty = false;
         g_system->ShutdownMainProcess();
     }
     g_game_loaded = false;
@@ -855,13 +873,3 @@ RETRO_API size_t retro_get_memory_size(unsigned /*id*/) {
 }
 
 } // extern "C"
-
-// Eden compat: unlike suyu, Eden's video_core only declares the VMA
-// (Vulkan Memory Allocator) interface - it never instantiates the actual
-// implementation itself, so every final linked binary that pulls in
-// video_core is individually responsible for doing so exactly once (see
-// yuzu_cmd/yuzu.cpp and yuzu/main_window.cpp for the same pattern). Without
-// this, linking fails with unresolved externals for every vma* symbol
-// video_core.lib calls (vmaCreateBuffer, vmaFlushAllocation, etc).
-#define VMA_IMPLEMENTATION
-#include "video_core/vulkan_common/vma.h"
