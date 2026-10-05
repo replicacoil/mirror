@@ -529,6 +529,9 @@ RETRO_API void retro_init() {
 
     g_system->Initialize();
     Settings::values.renderer_backend.SetValue(Settings::RendererBackend::Vulkan);
+    if (Settings::values.renderer_backend.GetValue() == Settings::RendererBackend::Vulkan) {  
+      Settings::values.use_asynchronous_shaders.SetValue(true);  
+    }
     // Audio output path. Default is "host": Eden opens its own audio device
     // and plays directly, which is how this core behaved before the libretro
     // route existed and is what actually sounds correct today.
