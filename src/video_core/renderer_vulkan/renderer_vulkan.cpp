@@ -11,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include <fmt/ranges.h>
 
