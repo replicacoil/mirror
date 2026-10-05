@@ -512,15 +512,15 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb) {
 }
 
 RETRO_API void retro_init() {
-    Common::Log::Initialize();
-    Common::Log::Start();
-
-    LOG_INFO(Frontend, "libretro core: retro_init() starting");
-
     // Must happen before any Common::FS::GetEdenPath() call (including the
     // key-import block just below), or those calls will already have latched
     // onto the old %APPDATA%/portable paths.
     RedirectEdenPathsToFrontend();
+
+    Common::Log::Initialize();
+    Common::Log::Start();
+
+    LOG_INFO(Frontend, "libretro core: retro_init() starting");
 
     g_system = std::make_unique<Core::System>();
     g_emu_window = std::make_unique<LibretroCore::RetroEmuWindow>();
