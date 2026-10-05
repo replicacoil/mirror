@@ -230,8 +230,16 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
             headless_height = layout.height;
             const VkDeviceSize buffer_size = headless_width * headless_height * 4;
 
-            auto dst_buffer = RenderToBuffer(framebuffers, layout, VK_FORMAT_B8G8R8A8_UNORM,
-                                             buffer_size);
+            const auto t0 = std::chrono::steady_clock::now();  
+            auto dst_buffer = RenderToBuffer(framebuffers, layout, VK_FORMAT_B8G8R8A8_UNORM,  
+                                             buffer_size);  
+            const auto t1 = std::chrono::steady_clock::now();  
+            static unsigned n = 0;  
+            if (++n % 30 == 0) {  
+                LOG_INFO(Render_Vulkan, "Headless readback: {:.1f} ms ({}x{})",  
+                         std::chrono::duration<float, std::milli>(t1 - t0).count(),  
+                         headless_width, headless_height);  
+            }  
             headless_frame_data.resize(buffer_size);
             std::memcpy(headless_frame_data.data(), dst_buffer.Mapped().data(), buffer_size);
         }
