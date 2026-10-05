@@ -21,7 +21,9 @@
 //     AudioEngine::Libretro sink - tidier in principle, but nothing paces the
 //     emulated renderer here so it delivers in bursts.
 //   - Input: retro_input_state_cb is bridged into InputCommon's
-//     VirtualGamepad (16 buttons + both analog sticks).
+//     VirtualGamepad for up to 8 ports (16 buttons + both analog sticks
+//     each), with per-port controller type selectable from RetroArch's own
+//     Controls menu.
 //   - Keys: prod/title/console.keys are picked up from the frontend's
 //     system directory (<system>/eden/keys) if not already installed.
 //   - Online: Eden's own room-based multiplayer is initialised here, so
@@ -35,6 +37,7 @@
 //     RETRO_SERIALIZATION_QUIRK_INCOMPLETE so the frontend reports them as
 //     unavailable rather than offering them and failing later.
 
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -79,6 +82,10 @@ bool g_use_frontend_audio = false;
 // FrontendAudioCallback() instead of doing it inline, since both draining the
 // same queue would just race pointlessly.
 bool g_audio_callback_registered = false;
+
+// Set from the "eden_log_fps" debugging option; see CheckForLiveOptionChanges
+// and the [FPS] logging block in retro_run().
+bool g_log_fps_enabled = false;
 
 retro_environment_t g_environ_cb;
 retro_video_refresh_t g_video_cb;
@@ -204,20 +211,135 @@ void RedirectEdenPathsToFrontend() {
 }
 
 
+// Reads a single core option's current value, or empty if unavailable.
+std::string ReadOption(const char* key) {
+    struct retro_variable v {
+        key, nullptr
+    };
+    if (g_environ_cb && g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &v) && v.value) {
+        return v.value;
+    }
+    return {};
+}
+
+// Builds a Common::Log::Filter from the eden_log_* debugging options and
+// actually applies it via Common::Log::SetGlobalFilter() - Settings::values
+// .log_filter on its own does nothing; every other frontend (see
+// yuzu/main_window.cpp) parses it into a real Filter and applies that
+// explicitly, which this core never did until now (the previous hardcoded
+// Settings::values.log_filter.SetValue() call in retro_init() was silently
+// inert for that reason - it set a value nothing ever read).
+void ApplyLogFilterFromOptions() {
+    const std::string level_str = ReadOption("eden_log_level");
+    const char* level_name = "Info";
+    if (level_str == "Critical") level_name = "Critical";
+    else if (level_str == "Error") level_name = "Error";
+    else if (level_str == "Warning") level_name = "Warning";
+    else if (level_str == "Debug") level_name = "Debug";
+    else if (level_str == "Trace") level_name = "Trace";
+
+    std::string filter_str = std::string("*:") + level_name;
+    // Always-on: cheap, useful presentation/frame-pacing detail regardless of
+    // the global level.
+    filter_str += " Service.VI:Debug Service.AM:Debug Service.Nvnflinger:Debug";
+
+    if (ReadOption("eden_log_render") == "On") {
+        filter_str += " Render:Debug Render.Vulkan:Debug Render.OpenGL:Debug Render.Software:Debug";
+    }
+    if (ReadOption("eden_log_gpu") == "On") {
+        filter_str += " HW.GPU:Debug";
+    }
+
+    Common::Log::Filter filter;
+    filter.ParseFilterString(filter_str);
+    Common::Log::SetGlobalFilter(filter);
+    Settings::values.log_filter.SetValue(filter_str);
+
+    LOG_INFO(Frontend, "libretro: applied log filter: {}", filter_str);
+}
+
+// Every Settings::ControllerType except Handheld, which isn't a per-port
+// device choice at all - it's a separate, implicit NpadIdType::Handheld slot
+// Eden's HID core manages itself based on the Docked Mode option, not
+// something selected per-port here (see emulated_controller.cpp).
 static const retro_controller_description pad_types[] = {
     {"Pro Controller", RETRO_DEVICE_JOYPAD},
-    {"Dual Joy-Con Detached", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
+    {"Joy-Con Pair", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
     {"Joy-Con Left", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)},
     {"Joy-Con Right", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2)},
+    {"GameCube Controller", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3)},
+    {"Poke Ball Plus", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4)},
+    {"NES Controller", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 5)},
+    {"SNES Controller", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 6)},
+    {"N64 Controller", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 7)},
+    {"Sega Genesis Controller", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 8)},
     {nullptr, 0}
 };
+constexpr unsigned kNumPadTypes = 10;
 
 static const struct retro_controller_info port_info[] = {
-    {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {pad_types, 4},
-    {pad_types, 4}, {pad_types, 4}, {pad_types, 4}, {nullptr, 0}
+    {pad_types, kNumPadTypes}, {pad_types, kNumPadTypes}, {pad_types, kNumPadTypes},
+    {pad_types, kNumPadTypes}, {pad_types, kNumPadTypes}, {pad_types, kNumPadTypes},
+    {pad_types, kNumPadTypes}, {pad_types, kNumPadTypes}, {nullptr, 0}
 };
 
 unsigned g_port_device_type[8] = {};
+
+// Decodes the libretro "device" value RetroArch passes to
+// retro_set_controller_port_device() - driven by its own
+// Quick Menu > Controls > Port N > Device Type menu, populated from the
+// pad_types[] list above - into the Settings::ControllerType Eden's HID core
+// actually wants. Defaults to Pro Controller for RETRO_DEVICE_NONE or
+// anything unrecognised - it's accepted everywhere, including Docked mode
+// (unlike Handheld, which real hardware and some games specifically reject
+// while docked - see the pad_types[] comment above for why it's excluded).
+Settings::ControllerType MapDeviceType(unsigned device) {
+    switch (device) {
+    case RETRO_DEVICE_JOYPAD:
+        return Settings::ControllerType::ProController;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0):
+        return Settings::ControllerType::DualJoyconDetached;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
+        return Settings::ControllerType::LeftJoycon;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2):
+        return Settings::ControllerType::RightJoycon;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 3):
+        return Settings::ControllerType::GameCube;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 4):
+        return Settings::ControllerType::Pokeball;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 5):
+        return Settings::ControllerType::NES;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 6):
+        return Settings::ControllerType::SNES;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 7):
+        return Settings::ControllerType::N64;
+    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 8):
+        return Settings::ControllerType::SegaGenesis;
+    default:
+        return Settings::ControllerType::ProController;
+    }
+}
+
+// Connects and (re)types every player port, then tells Eden's HID core to
+// pick the change up. Shared by retro_load_game() (first load) and
+// retro_set_controller_port_device() (RetroArch calls this live whenever the
+// user changes Port N's Device Type in Quick Menu > Controls - including
+// *after* retro_load_game() has already run, which is exactly why a type
+// change only ever took effect on the next full session rather than
+// immediately or even "on next restart": the stored g_port_device_type was
+// being applied once at load, but the frontend's actual call frequently
+// arrives after that point has already passed).
+void ApplyControllerPorts() {
+    if (!g_system) {
+        return;
+    }
+    for (int i = 0; i < 8; ++i) {
+        auto& p = Settings::values.players.GetValue()[i];
+        p.connected = true;
+        p.controller_type = MapDeviceType(g_port_device_type[i]);
+    }
+    g_system->HIDCore().ReloadInputDevices();
+}
 
 } // namespace
 
@@ -232,34 +354,134 @@ RETRO_API void retro_set_environment(retro_environment_t cb) {
     enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
     cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 
-    static const struct retro_variable vars[] = {
-        {"eden_renderer", "Renderer; Vulkan|OpenGL|Software"},
-        {"eden_resolution", "Internal Resolution; 1x|2x|3x|4x"},
-        {"eden_scaling_filter", "Window Adapting Filter; Bilinear|Bicubic|Lanczos|ScaleForce|FSR|NearestNeighbor"},
-        {"eden_anti_aliasing", "Anti-Aliasing; None|FXAA|SMAA"},
-        {"eden_cpu_accuracy", "CPU Accuracy; Auto|Accurate|Unsafe"},
-        {"eden_use_docked", "Docked Mode; Yes|No"},
-        {"eden_fastmem", "Fastmem; Enabled|Disabled"},
-        // Redirects Eden's data (NAND/SDMC/saves/config/keys/cache/logs) into
-        // RetroArch's own system/save directories instead of Eden's normal
-        // %APPDATA%\Eden (or <retroarch>\user in portable mode) location.
-        // Default is Enabled so the core behaves like other libretro cores
-        // out of the box; switch to Disabled to keep using a standalone
-        // Eden install's existing data instead.
-        {"eden_use_frontend_dirs", "Use RetroArch System/Save Directories; Enabled|Disabled"},
-        {"eden_audio_output", "Audio Output; Host (direct)|Frontend (libretro)"},
-        // Eden's own online play. RetroArch's netplay can't drive this core
-        // (see retro_serialize_size), but Eden's room system tunnels the
-        // game's own LAN multiplayer between peers and doesn't need frame
-        // sync, so it works here - it just needs somewhere to be configured,
-        // which is what these are.
-        {"eden_online_enable", "Eden Online Play; Disabled|Enabled"},
-        {"eden_online_server", "Eden Room Server; 127.0.0.1"},
-        {"eden_online_port", "Eden Room Port; 24872"},
-        {"eden_online_nickname", "Eden Online Nickname; Player"},
-        {nullptr, nullptr},
+    // Core Options V2, with everything new (the debugging tools below) under
+    // its own "Debugging" category - the older flat list further down is
+    // only a fallback for frontends that don't support V2 (unlikely for any
+    // RetroArch from the last several years, but costs little to keep).
+    static const struct retro_core_option_v2_category categories[] = {
+        {"debugging", "Debugging",
+         "Logging controls for comparing this core's behaviour against standalone Eden - "
+         "e.g. tracking down a scene that runs fine standalone but not here."},
+        {nullptr, nullptr, nullptr},
     };
-    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
+    static const struct retro_core_option_v2_definition definitions[] = {
+        {"eden_renderer", "Renderer", nullptr, nullptr, nullptr, nullptr,
+         {{"Vulkan", nullptr}, {"OpenGL", nullptr}, {"Software", nullptr}, {nullptr, nullptr}},
+         "Vulkan"},
+        {"eden_resolution", "Internal Resolution", nullptr, nullptr, nullptr, nullptr,
+         {{"1x (Native)", nullptr}, {"2x (~4K)", nullptr}, {"3x (~6K)", nullptr},
+          {"4x (~8K)", nullptr}, {nullptr, nullptr}},
+         "1x (Native)"},
+        {"eden_scaling_filter", "Window Adapting Filter", nullptr, nullptr, nullptr, nullptr,
+         {{"Bilinear", nullptr}, {"Bicubic", nullptr}, {"Lanczos", nullptr},
+          {"ScaleForce", nullptr}, {"FSR", nullptr}, {"NearestNeighbor", nullptr},
+          {nullptr, nullptr}},
+         "Bilinear"},
+        {"eden_anti_aliasing", "Anti-Aliasing", nullptr, nullptr, nullptr, nullptr,
+         {{"None", nullptr}, {"FXAA", nullptr}, {"SMAA", nullptr}, {nullptr, nullptr}},
+         "None"},
+        {"eden_cpu_accuracy", "CPU Accuracy", nullptr, nullptr, nullptr, nullptr,
+         {{"Auto", nullptr}, {"Accurate", nullptr}, {"Unsafe", nullptr}, {nullptr, nullptr}},
+         "Auto"},
+        {"eden_use_docked", "Docked Mode", nullptr, nullptr, nullptr, nullptr,
+         {{"Yes", nullptr}, {"No", nullptr}, {nullptr, nullptr}},
+         "Yes"},
+        {"eden_fastmem", "Fastmem", nullptr, nullptr, nullptr, nullptr,
+         {{"Enabled", nullptr}, {"Disabled", nullptr}, {nullptr, nullptr}},
+         "Enabled"},
+        {"eden_use_frontend_dirs", "Use RetroArch System/Save Directories", nullptr,
+         "Redirects Eden's data (NAND/SDMC/saves/config/keys/cache/logs) into RetroArch's own "
+         "system/save directories instead of Eden's normal %APPDATA%/Eden (or <retroarch>/user "
+         "in portable mode) location. Disable to use a standalone Eden install's existing data.",
+         nullptr, nullptr,
+         {{"Enabled", nullptr}, {"Disabled", nullptr}, {nullptr, nullptr}},
+         "Enabled"},
+        {"eden_audio_output", "Audio Output", nullptr, nullptr, nullptr, nullptr,
+         {{"Host (direct)", nullptr}, {"Frontend (libretro)", nullptr}, {nullptr, nullptr}},
+         "Host (direct)"},
+        {"eden_online_enable", "Eden Online Play", nullptr,
+         "Eden's own room-based multiplayer. RetroArch's netplay can't drive this core (no save "
+         "state support), but this tunnels the game's own LAN multiplayer between peers instead.",
+         nullptr, nullptr,
+         {{"Disabled", nullptr}, {"Enabled", nullptr}, {nullptr, nullptr}},
+         "Disabled"},
+        {"eden_online_server", "Eden Room Server", nullptr, nullptr, nullptr, nullptr,
+         {{"127.0.0.1", nullptr}, {nullptr, nullptr}},
+         "127.0.0.1"},
+        {"eden_online_port", "Eden Room Port", nullptr, nullptr, nullptr, nullptr,
+         {{"24872", nullptr}, {nullptr, nullptr}},
+         "24872"},
+        {"eden_online_nickname", "Eden Online Nickname", nullptr, nullptr, nullptr, nullptr,
+         {{"Player", nullptr}, {nullptr, nullptr}},
+         "Player"},
+        // --- Debugging category ---
+        {"eden_log_level", "Global Log Level", "Log Level",
+         "Minimum severity logged for every category not overridden below. Trace is extremely "
+         "verbose and will noticeably slow emulation down; Debug is the usual choice for "
+         "troubleshooting.", nullptr, "debugging",
+         {{"Critical", nullptr}, {"Error", nullptr}, {"Warning", nullptr}, {"Info", nullptr},
+          {"Debug", nullptr}, {"Trace", nullptr}, {nullptr, nullptr}},
+         "Info"},
+        {"eden_log_render", "Rendering/Pipeline Log", "Rendering/Pipeline",
+         "Debug-level logging for Render, Render.Vulkan, Render.OpenGL and Render.Software - "
+         "shader/pipeline creation, renderer init, per-frame renderer messages.", nullptr,
+         "debugging",
+         {{"Off", nullptr}, {"On", nullptr}, {nullptr, nullptr}},
+         "Off"},
+        {"eden_log_gpu", "GPU/Engine Log", "GPU/Engine",
+         "Debug-level logging for HW.GPU - the Maxwell command processor and GPU thread, "
+         "including per-frame timing-relevant messages.", nullptr, "debugging",
+         {{"Off", nullptr}, {"On", nullptr}, {nullptr, nullptr}},
+         "Off"},
+        {"eden_log_fps", "Frame Timing Log", "Frame Timing",
+         "Logs this core's own measured frame interval/FPS periodically to eden_log.txt (tagged "
+         "[FPS]), independent of Eden's internal emulation speed - for comparing a slow scene "
+         "against standalone Eden's own FPS counter to see whether the slowdown is in Eden's "
+         "emulation or specific to this core's render/readback path.", nullptr, "debugging",
+         {{"Off", nullptr}, {"On", nullptr}, {nullptr, nullptr}},
+         "Off"},
+        {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, {{nullptr, nullptr}}, nullptr},
+    };
+
+    static struct retro_core_options_v2 options_v2 {
+        const_cast<struct retro_core_option_v2_category*>(categories),
+        const_cast<struct retro_core_option_v2_definition*>(definitions),
+    };
+
+    unsigned options_version = 0;
+    if (!cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &options_version)) {
+        options_version = 0;
+    }
+    if (options_version >= 2) {
+        cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2, &options_v2);
+    } else {
+        // Fallback for anything that predates Core Options V2: same option
+        // keys/values, just flattened and with no Debugging grouping.
+        static const struct retro_variable vars[] = {
+            {"eden_renderer", "Renderer; Vulkan|OpenGL|Software"},
+            {"eden_resolution", "Internal Resolution; 1x (Native)|2x (~4K)|3x (~6K)|4x (~8K)"},
+            {"eden_scaling_filter",
+             "Window Adapting Filter; Bilinear|Bicubic|Lanczos|ScaleForce|FSR|NearestNeighbor"},
+            {"eden_anti_aliasing", "Anti-Aliasing; None|FXAA|SMAA"},
+            {"eden_cpu_accuracy", "CPU Accuracy; Auto|Accurate|Unsafe"},
+            {"eden_use_docked", "Docked Mode; Yes|No"},
+            {"eden_fastmem", "Fastmem; Enabled|Disabled"},
+            {"eden_use_frontend_dirs", "Use RetroArch System/Save Directories; Enabled|Disabled"},
+            {"eden_audio_output", "Audio Output; Host (direct)|Frontend (libretro)"},
+            {"eden_online_enable", "Eden Online Play; Disabled|Enabled"},
+            {"eden_online_server", "Eden Room Server; 127.0.0.1"},
+            {"eden_online_port", "Eden Room Port; 24872"},
+            {"eden_online_nickname", "Eden Online Nickname; Player"},
+            {"eden_log_level", "Debugging > Global Log Level; Info|Debug|Trace|Warning|Error|Critical"},
+            {"eden_log_render", "Debugging > Rendering/Pipeline Log; Off|On"},
+            {"eden_log_gpu", "Debugging > GPU/Engine Log; Off|On"},
+            {"eden_log_fps", "Debugging > Frame Timing Log; Off|On"},
+            {nullptr, nullptr},
+        };
+        cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+    }
+
     cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)port_info);
     // Tell the frontend up front that state serialization is not usable for
     // frame-sensitive features. RetroArch keys netplay and rerecording off
@@ -322,7 +544,11 @@ RETRO_API void retro_init() {
     Settings::values.cpuopt_fastmem.SetValue(true);
     Settings::values.cpuopt_fastmem_exclusives.SetValue(true);
     Settings::values.log_flush_line.SetValue(true);
-    Settings::values.log_filter.SetValue("*:Info Service.VI:Debug Service.AM:Debug Service.Nvnflinger:Debug");
+    // Actually applies the eden_log_* debugging options (see
+    // ApplyLogFilterFromOptions' comment) - the hardcoded Settings::values
+    // .log_filter.SetValue() this replaces never did anything, since nothing
+    // ever called Common::Log::SetGlobalFilter() to make it take effect.
+    ApplyLogFilterFromOptions();
     g_system->ApplySettings();
     g_system->SetContentProvider(std::make_unique<FileSys::ContentProviderUnion>());
     g_system->SetFilesystem(std::make_shared<FileSys::RealVfsFilesystem>());
@@ -436,9 +662,17 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info* info) {
 }
 
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device) {
-    if (port < 8) {
-        g_port_device_type[port] = device;
+    if (port >= 8) {
+        return;
     }
+    g_port_device_type[port] = device;
+    // RetroArch calls this both before AND after retro_load_game() - before,
+    // on initial content load with a saved Device Type; after, any time the
+    // user changes it live from Quick Menu > Controls. g_system only exists
+    // once retro_init() has run, so this is a no-op (safely deferred to
+    // retro_load_game()'s own call to ApplyControllerPorts()) for the
+    // before-load case, and applies immediately for the after-load case.
+    ApplyControllerPorts();
 }
 
 RETRO_API void retro_reset() {
@@ -472,20 +706,6 @@ constexpr RetroToVirtual kButtonMap[] = {
 };
 bool g_prev_buttons[8][20] = {};
 
-static Settings::ControllerType MapDeviceType(unsigned device) {
-    switch (device) {
-    case RETRO_DEVICE_JOYPAD:
-        return Settings::ControllerType::ProController;
-    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0):
-        return Settings::ControllerType::DualJoyconDetached;
-    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1):
-        return Settings::ControllerType::LeftJoycon;
-    case RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 2):
-        return Settings::ControllerType::RightJoycon;
-    default:
-        return Settings::ControllerType::ProController;
-    }
-}
 
 } // namespace
 
@@ -564,7 +784,54 @@ void RETRO_CALLCONV FrontendAudioSetState(bool enabled) {
 
 } // namespace
 
+namespace {
+
+// Polls for any core-option change once per frame and applies whichever of
+// our live-updatable options actually moved. A single
+// RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE check covers all of them - no need
+// for one call per option.
+void CheckForLiveOptionChanges() {
+    bool updated = false;
+    if (!g_environ_cb || !g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) ||
+        !updated) {
+        return;
+    }
+
+    // Docked Mode: lets Quick Menu > Options > Docked Mode take effect
+    // immediately on a running game, the same way Eden's own Qt UI applies
+    // it live - without this, eden_use_docked is only ever read once in
+    // retro_load_game(), so toggling it mid-session would silently do
+    // nothing until the next reload. Mirrors OnDockedModeChanged() in
+    // yuzu/configuration/configure_input.cpp, which is Qt-widget code we
+    // can't link from a libretro core; the actual logic there has no Qt
+    // dependency, so it's reproduced directly here instead.
+    if (g_system && g_game_loaded) {
+        const std::string docked_str = ReadOption("eden_use_docked");
+        if (!docked_str.empty()) {
+            const bool new_docked = docked_str == "Yes";
+            const bool was_docked = Settings::values.use_docked_mode.GetValue() ==
+                                     Settings::ConsoleMode::Docked;
+            if (new_docked != was_docked) {
+                Settings::values.use_docked_mode.SetValue(
+                    new_docked ? Settings::ConsoleMode::Docked : Settings::ConsoleMode::Handheld);
+                if (g_system->IsPoweredOn()) {
+                    g_system->GetAppletManager().OperationModeChanged();
+                    LOG_INFO(Frontend, "libretro: docked mode changed live -> {}",
+                             new_docked ? "Docked" : "Handheld");
+                }
+            }
+        }
+    }
+
+    ApplyLogFilterFromOptions();
+    g_log_fps_enabled = ReadOption("eden_log_fps") == "On";
+}
+
+} // namespace
+
 RETRO_API void retro_run() {
+    CheckForLiveOptionChanges();
+
     if (g_geometry_dirty && g_environ_cb) {
         retro_game_geometry geom{};
         geom.base_width = kFrameWidth * g_output_scale;
@@ -621,6 +888,47 @@ RETRO_API void retro_run() {
         LOG_INFO(Frontend, "libretro: retro_run frame {}, game_loaded={}", frame_counter, g_game_loaded);
         fprintf(stderr, "[eden-libretro] retro_run frame %u, game_loaded=%d\n", frame_counter, g_game_loaded);
         fflush(stderr);
+    }
+
+    // "eden_log_fps" debugging option: measures this core's own actual
+    // retro_run() call interval (i.e. the rate RetroArch is driving us at,
+    // and the time our own readback/bridge work takes within that), entirely
+    // independent of whatever FPS counter Eden's internals may report. The
+    // point is comparison against standalone Eden during the same scene: if
+    // both report the same drop, the slowdown is in Eden's emulation itself;
+    // if this core reports noticeably worse than standalone's own counter
+    // for the same moment, the overhead is specific to this core's
+    // render-readback/bridge path rather than Eden proper.
+    if (g_log_fps_enabled && g_game_loaded) {
+        static auto last_time = std::chrono::steady_clock::now();
+        static unsigned sample_count = 0;
+        static double accum_ms = 0.0;
+        static double worst_ms = 0.0;
+
+        const auto now = std::chrono::steady_clock::now();
+        const double delta_ms = std::chrono::duration<double, std::milli>(now - last_time).count();
+        last_time = now;
+
+        // Skip the first sample after enabling/loading - it measures however
+        // long content load or the option toggle itself took, not a frame.
+        if (sample_count > 0 || frame_counter > 1) {
+            accum_ms += delta_ms;
+            worst_ms = std::max(worst_ms, delta_ms);
+            ++sample_count;
+        }
+
+        if (sample_count >= 60) {
+            const double avg_ms = accum_ms / sample_count;
+            const double avg_fps = avg_ms > 0.0 ? 1000.0 / avg_ms : 0.0;
+            const double worst_fps = worst_ms > 0.0 ? 1000.0 / worst_ms : 0.0;
+            LOG_INFO(Frontend,
+                     "[FPS] frame {}: {} samples, avg {:.2f} ms ({:.1f} fps), "
+                     "worst {:.2f} ms ({:.1f} fps)",
+                     frame_counter, sample_count, avg_ms, avg_fps, worst_ms, worst_fps);
+            sample_count = 0;
+            accum_ms = 0.0;
+            worst_ms = 0.0;
+        }
     }
 
     // Only handle audio here ourselves if no async audio callback took over
@@ -721,15 +1029,17 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
         var.key = "eden_resolution";
         var.value = nullptr;
         if (g_environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+            // Matches by leading token so this doesn't depend on the exact
+            // "(~4K)"-style suffix text in the option strings above.
             const std::string v(var.value);
             auto res = Settings::ResolutionSetup::Res1X;
-            if (v == "2x") {
+            if (v.rfind("2x", 0) == 0) {
                 res = Settings::ResolutionSetup::Res2X;
                 g_output_scale = 2;
-            } else if (v == "3x") {
+            } else if (v.rfind("3x", 0) == 0) {
                 res = Settings::ResolutionSetup::Res3X;
                 g_output_scale = 3;
-            } else if (v == "4x") {
+            } else if (v.rfind("4x", 0) == 0) {
                 res = Settings::ResolutionSetup::Res4X;
                 g_output_scale = 4;
             }
@@ -773,14 +1083,21 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
             Settings::values.cpuopt_fastmem.SetValue(enabled);
             Settings::values.cpuopt_fastmem_exclusives.SetValue(enabled);
         }
+        ApplyLogFilterFromOptions();
+        g_log_fps_enabled = ReadOption("eden_log_fps") == "On";
         g_system->ApplySettings();
 
-        for (int i = 0; i < 8; ++i) {
-            auto& p = Settings::values.players.GetValue()[i];
-            p.connected = true;
-            p.controller_type = MapDeviceType(g_port_device_type[i]);
-        }
-        g_system->HIDCore().ReloadInputDevices();
+        // Explicitly connect every player slot before loading. Eden (unlike
+        // suyu, which auto-connects Player1 as a fallback regardless of this
+        // setting - see hid_core/frontend/emulated_controller.cpp) only
+        // connects a controller when Settings::values.players[i].connected is
+        // true, and nothing else in this minimal embedding ever sets that.
+        // Without this, games that strictly check IsConnected() before
+        // accepting input (Smash Ultimate, confirmed by testing) silently
+        // never receive a single button press, while games that just read
+        // raw HID state regardless happen to work anyway - which is exactly
+        // the split we saw between titles before this fix.
+        ApplyControllerPorts();
 
         g_emu_window->UpdateCurrentFramebufferLayout(kFrameWidth * g_output_scale, kFrameHeight * g_output_scale);
         g_geometry_dirty = true;
