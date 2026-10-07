@@ -68,6 +68,7 @@ namespace {
 std::unique_ptr<Core::System> g_system;
 std::unique_ptr<LibretroCore::RetroEmuWindow> g_emu_window;
 std::shared_ptr<InputCommon::InputSubsystem> g_input_subsystem;
+std::unique_ptr<FileSys::ManualContentProvider> g_manual_provider;
 std::string g_game_path;
 bool g_game_loaded = false;
 
@@ -553,7 +554,9 @@ RETRO_API void retro_init() {
     // ever called Common::Log::SetGlobalFilter() to make it take effect.
     ApplyLogFilterFromOptions();
     g_system->ApplySettings();
+    g_manual_provider = std::make_unique<FileSys::ManualContentProvider>();
     g_system->SetContentProvider(std::make_unique<FileSys::ContentProviderUnion>());
+    g_system->RegisterContentProvider(FileSys::ContentProviderUnionSlot::FrontendManual, g_manual_provider.get());
     g_system->SetFilesystem(std::make_shared<FileSys::RealVfsFilesystem>());
     g_system->GetFileSystemController().CreateFactories(*g_system->GetFilesystem());
     g_system->GetUserChannel().clear();
@@ -1166,6 +1169,15 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game) {
         }
     }
 
+    // Register the loaded file's contents (packed updates, DLC) into
+    // FrontendManual, the same way the Qt game list does when scanning,
+    // so PatchManager can find update/AOC NCAs inside a merged NSP/XCI.
+    g_manual_provider->ClearAllEntries();
+    if (const auto file =
+            g_system->GetFilesystem()->OpenFile(g_game_path, FileSys::OpenMode::Read)) {
+        g_manual_provider->AddEntriesFromContainer(file);
+    }
+
     Service::AM::FrontendAppletParameters load_parameters{};
     load_parameters.applet_id = Service::AM::AppletId::Application;
 
@@ -1221,6 +1233,7 @@ RETRO_API void retro_unload_game() {
         g_geometry_dirty = false;
         g_system->ShutdownMainProcess();
     }
+    g_manual_provider->ClearAllEntries();
     g_game_loaded = false;
     g_game_path.clear();
     // Leave any room we joined for this game; the next one loaded in this
