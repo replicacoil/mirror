@@ -16,8 +16,6 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     RENDERER_USE_SPEED_LIMIT("use_speed_limit"),
     USE_CUSTOM_CPU_TICKS("use_custom_cpu_ticks"),
     SKIP_CPU_INNER_INVALIDATION("skip_cpu_inner_invalidation"),
-    NCE_INVALIDATION_GPU_READBACK("nce_invalidation_gpu_readback"),
-    NCE_RUNTIME_NRO_PATCH("nce_runtime_nro_patch"),
     FIX_BLOOM_EFFECTS("fix_bloom_effects"),
     EMULATE_BGR565("emulate_bgr565"),
     RESCALE_HACK("rescale_hack"),
@@ -27,7 +25,6 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     RENDERER_USE_DISK_SHADER_CACHE("use_disk_shader_cache"),
     RENDERER_FORCE_MAX_CLOCK("force_max_clock"),
     RENDERER_ASYNCHRONOUS_GPU_EMULATION("use_asynchronous_gpu_emulation"),
-    RENDERER_ASYNC_PRESENTATION("async_presentation"),
     RENDERER_ASYNCHRONOUS_SHADERS("use_asynchronous_shaders"),
     RENDERER_REACTIVE_FLUSHING("use_reactive_flushing"),
     ENABLE_BUFFER_HISTORY("enable_buffer_history"),
@@ -96,7 +93,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
 
     ENABLE_QUICK_SETTINGS("enable_quick_settings");
 
-//  external fun isFrameSkippingEnabled(): Boolean
+    //external fun isFrameSkippingEnabled(): Boolean
     external fun isFrameInterpolationEnabled(): Boolean
 
     override fun getBoolean(needsGlobal: Boolean): Boolean =

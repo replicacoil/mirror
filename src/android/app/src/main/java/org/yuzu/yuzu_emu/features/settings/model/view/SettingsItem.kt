@@ -754,13 +754,6 @@ abstract class SettingsItem(
                 )
             )
             put(
-                SwitchSetting(
-                    BooleanSetting.RENDERER_ASYNC_PRESENTATION,
-                    titleId = R.string.renderer_async_presentation,
-                    descriptionId = R.string.renderer_async_presentation_description
-                )
-            )
-            put(
                 SingleChoiceSetting(
                     IntSetting.DMA_ACCURACY,
                     titleId = R.string.dma_accuracy,
@@ -864,20 +857,6 @@ abstract class SettingsItem(
                     BooleanSetting.SKIP_CPU_INNER_INVALIDATION,
                     titleId = R.string.skip_cpu_inner_invalidation,
                     descriptionId = R.string.skip_cpu_inner_invalidation_description
-                )
-            )
-            put(
-                SwitchSetting(
-                    BooleanSetting.NCE_INVALIDATION_GPU_READBACK,
-                    titleId = R.string.nce_invalidation_gpu_readback,
-                    descriptionId = R.string.nce_invalidation_gpu_readback_description
-                )
-            )
-            put(
-                SwitchSetting(
-                    BooleanSetting.NCE_RUNTIME_NRO_PATCH,
-                    titleId = R.string.nce_runtime_nro_patch,
-                    descriptionId = R.string.nce_runtime_nro_patch_description
                 )
             )
             put(
