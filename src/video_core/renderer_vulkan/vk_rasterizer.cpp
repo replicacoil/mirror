@@ -82,7 +82,12 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
 
     if (lower_left) {
         // Flip by surface clip height
-        y += conv(static_cast<f32>(regs.surface_clip.height));
+        const float clip_height = conv(static_cast<f32>(regs.surface_clip.height));
+        if (src.scale_y < 0.0f && y >= clip_height) {
+            y = clip_height - y;
+        } else {
+            y += clip_height;
+        }
         height = -height;
     }
 
@@ -796,18 +801,6 @@ void RasterizerVulkan::OnCacheInvalidation(DAddr addr, u64 size) {
         buffer_cache.WriteMemory(addr, size);
     }
     pipeline_cache.InvalidateRegion(addr, size);
-}
-
-bool RasterizerVulkan::TryCacheInvalidation(DAddr addr, u64 size) {
-    if (addr == 0 || size == 0) return true;
-    {
-        std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
-        if (buffer_cache.IsRegionGpuModified(addr, size)) return false;
-        texture_cache.WriteMemory(addr, size);
-        buffer_cache.WriteMemory(addr, size);
-    }
-    pipeline_cache.InvalidateRegion(addr, size);
-    return true;
 }
 
 void RasterizerVulkan::InvalidateGPUCache() {
